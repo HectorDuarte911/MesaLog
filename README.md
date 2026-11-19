@@ -110,21 +110,25 @@ mesalog/
 
 ## 🔌 Generic Game Interface
 
-Each game module must integrate with the engine through a set of common predicates (contract). The exact signature may be adjusted during implementation, but the planned design includes operations such as the following:
+Each game module must integrate with the engine through a set of common predicates (contract). The interface is declared in `src/game.pl` as multifile predicates so concrete game modules can provide implementations for each game identifier. The exact signatures may be refined as implementation progresses, but the current contract includes:
 
-| Predicate (indicative) | Purpose |
+| Predicate | Purpose |
 |---|---|
-| `initial_state(Game, State)` | Obtains the game's initial state. |
-| `initial_player(Game, Player)` | Defines which player starts the match. |
-| `current_player(State, Player)` | Determines which player's turn it is. |
-| `legal_moves(Game, State, Moves)` | Enumerates the moves allowed in a state. |
-| `valid_move(Game, State, Move)` | Checks whether a specific move is legal. |
-| `apply_move(Game, State, Move, NewState)` | Produces a new state from a move (without mutating the original state). |
-| `terminal_state(Game, State, Result)` | Indicates whether the match has ended and with what result (win, loss, draw). |
-| `display_state(Game, State)` | Displays the state in a readable form. |
-| `features(Game, State, Features)` | Exposes evaluable information for the AI (according to the final design). |
+| `initial_state(Game, State)` | Unifies `State` with the initial state for `Game`. |
+| `initial_player(Game, Player)` | Unifies `Player` with the player who moves first in `Game`. |
+| `current_player(Game, State, Player)` | Unifies `Player` with the player to move in `State`. |
+| `legal_moves(Game, State, Moves)` | Unifies `Moves` with the list of legal moves available in `State`. |
+| `valid_move(Game, State, Move)` | Succeeds if `Move` is legal in `State` (consistent with `legal_moves/3`). |
+| `apply_move(Game, State, Move, NewState)` | Produces `NewState` by applying `Move` to `State` without mutating `State`. |
+| `terminal_state(Game, State, Result)` | Succeeds if `State` is terminal and unifies `Result` with the outcome (recommended: `win(Player)` or `draw`); fails for non-terminal states. |
+| `display_state(Game, State)` | Displays `State` for `Game` in a human-readable form. |
+| `features(Game, State, Features)` | Optional hook that unifies `Features` with evaluable characteristics of `State` for heuristic evaluation/analysis. |
 
-**Key property:** `apply_move/4` must be a functional transformation of the state (input → output), preserving immutability.
+**Conventions:**
+- `Game` is an atom identifying the game (e.g. `nim`, `tic_tac_toe`, `connect_four`).
+- `State` and `Move` are immutable, game-defined terms.
+- `apply_move/4` must be a functional state transition (input → output), preserving immutability.
+- Game modules extend the contract by adding multifile clauses (e.g. `:- multifile game:initial_state/2.` and `game:initial_state(my_game, State) :- ...`).
 
 ## 🤖 Artificial Intelligence
 
