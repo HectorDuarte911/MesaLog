@@ -108,9 +108,10 @@ mesalog/
 │       ├── tic_tac_toe.pl   # Tic-Tac-Toe implementation
 │       └── connect_four.pl  # Connect Four implementation
 └── tests/                   # Tests and demo queries
+    └── phase1_core_tests.pl # Phase 1 interface/engine/integration checks
 ```
 
-> This structure reflects the project's planned organization; files and their contents may evolve during development.
+> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented Phase 1 modules are `src/game.pl`, `src/engine.pl`, and `src/mesalog.pl`, validated by `tests/phase1_core_tests.pl`.
 
 ## 🔌 Generic Game Interface
 
@@ -292,6 +293,22 @@ On Windows, if the command is not recognized, it can be run directly from the in
 ?- [src/engine].
 ```
 
+**Current Phase 1 (implemented):**
+
+```prolog
+% Load core modules (contract, engine, integration)
+?- use_module(src/mesalog).
+
+% Or load modules individually
+?- [src/game, src/engine, src/mesalog].
+```
+
+### 🧪 Run Phase 1 Validation Tests
+
+```bash
+swipl -q -g "consult('tests/phase1_core_tests.pl'), run_tests, halt."
+```
+
 ### ▶️ Start a Match
 
 ```prolog
@@ -336,6 +353,10 @@ On Windows, if the command is not recognized, it can be run directly from the in
 ## 🚧 Project Status
 
 MesaLog is in the **design and early implementation phase**. This README describes the vision, planned architecture, and target capabilities of the system (generic engine, games, minimax/alpha-beta AI, configurable heuristics, explainable arbiter, DSL, and history/statistics).
+
+**Phase 1 (Core Architecture & Generic Engine) progress:**
+- **Completed:** Generic game interface contract (`src/game.pl`), match engine with controller-based step transitions (`src/engine.pl`), module integration/composition and structured validation/error flow (`src/mesalog.pl`), and minimal interface-conformance/smoke validation tests (`tests/phase1_core_tests.pl`).
+- **Pending in Phase 1:** none (core Phase 1 objectives are implemented; concrete game modules, arbiter, AI, DSL, and statistics remain planned for later phases).
 
 The module structure, exact predicate signatures, and definitive commands/queries may be refined as development progresses.
 

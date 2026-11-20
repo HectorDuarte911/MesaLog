@@ -90,14 +90,17 @@ validate_move(_Game, _State, Move, error(invalid_move(Move))).
 % - ok(NextMatch): Move is valid and produces NextMatch.
 % - error(Reason): Match is terminal, Move is rejected/invalid, or application
 %   cannot be completed.
-try_move(match(Game, State, Controllers), Move, ok(match(Game, NewState, Controllers))) :-
-    validate_move(Game, State, Move, ok),
-    game:apply_move(Game, State, Move, NewState),
-    !.
-try_move(match(Game, State, _Controllers), Move, error(Reason)) :-
-    validate_move(Game, State, Move, error(Reason)),
-    !.
-try_move(_Match, Move, error(apply_failed(Move))).
+try_move(match(Game, State, Controllers), Move, Outcome) :-
+    validate_move(Game, State, Move, Validation),
+    (   Validation == ok
+    ->  (   game:apply_move(Game, State, Move, NewState)
+        ->  Outcome = ok(match(Game, NewState, Controllers))
+        ;   Outcome = error(apply_failed(Move))
+        )
+    ;   Validation = error(Reason)
+    ->  Outcome = error(Reason)
+    ;   Outcome = error(unexpected_validation_result(Validation))
+    ).
 
 % try_step(+Match, -Outcome)
 % Attempts to advance Match by one controller-selected move with structured
