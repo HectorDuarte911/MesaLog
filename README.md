@@ -62,7 +62,7 @@ MesaLog is organized into layers/components with well-defined responsibilities:
    Implement the rules and particularities of Nim, Tic-Tac-Toe, and Connect Four according to the common interface.
 
 3. **Match engine (`engine`)**  
-   Orchestrates the flow of a match: initialization, move selection, move application, turn alternation, and end detection.
+   Orchestrates the flow of a match: initialization, move selection, move application, turn alternation, and end detection. The current Phase 1 implementation (`src/engine.pl`) provides match initialization, status inspection, single-step transitions, and a pluggable move-selection hook (`choose_move/5`) for controller-based move sources.
 
 4. **Arbiter (`arbiter`)**  
    Verifies that requested moves are valid in the current state and provides reasons for acceptance or rejection.
