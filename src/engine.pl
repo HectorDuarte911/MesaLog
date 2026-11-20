@@ -5,6 +5,7 @@
     match_controllers/2,
     match_status/2,
     current_player_turn/2,
+    select_controller/3,
     step_match/3,
     choose_move/5
 ]).

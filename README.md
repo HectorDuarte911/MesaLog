@@ -62,25 +62,28 @@ MesaLog is organized into layers/components with well-defined responsibilities:
    Implement the rules and particularities of Nim, Tic-Tac-Toe, and Connect Four according to the common interface.
 
 3. **Match engine (`engine`)**  
-   Orchestrates the flow of a match: initialization, move selection, move application, turn alternation, and end detection. The current Phase 1 implementation (`src/engine.pl`) provides match initialization, status inspection, single-step transitions, and a pluggable move-selection hook (`choose_move/5`) for controller-based move sources.
+   Orchestrates the flow of a match: initialization, move selection, move application, turn alternation, and end detection. The current Phase 1 implementation (`src/engine.pl`) provides match initialization, status inspection, controller lookup, single-step transitions, and a pluggable move-selection hook (`choose_move/5`) for controller-based move sources.
 
-4. **Arbiter (`arbiter`)**  
+4. **Module integration (`mesalog`)**  
+   Composes core modules, provides game module loading, and defines the error/invalid-move handling flow between the engine and validation components. The current Phase 1 implementation (`src/mesalog.pl`) loads core modules, resolves/loads game modules from `src/games/`, exposes a multifile `reject_move/4` validation hook, and provides structured outcomes through `validate_move/4`, `try_move/3`, and `try_step/2`.
+
+5. **Arbiter (`arbiter`)**  
    Verifies that requested moves are valid in the current state and provides reasons for acceptance or rejection.
 
-5. **Artificial intelligence (`ai`)**  
+6. **Artificial intelligence (`ai`)**  
    Implements adversarial search algorithms (minimax and alpha-beta pruning) to select moves.
 
-6. **Heuristics (`heuristics`)**  
+7. **Heuristics (`heuristics`)**  
    Manages evaluation functions, features, predefined heuristics, and custom weighted heuristics.
 
-7. **Explanation and traceability (`explanation`)**  
+8. **Explanation and traceability (`explanation`)**  
    Facilitates the interpretation of validations, evaluations, and AI decisions (e.g., why a move was chosen or discarded).
 
-8. **Move language/DSL (`dsl`)**  
+9. **Move language/DSL (`dsl`)**  
    Defines a user-friendly syntax for expressing moves through operators declared with `op/3`.
 
-9. **History and statistics (`statistics`)**  
-   Records match events and results and allows them to be queried through the dynamic database and aggregate queries.
+10. **History and statistics (`statistics`)**  
+    Records match events and results and allows them to be queried through the dynamic database and aggregate queries.
 
 ## 🗂️ Repository Structure (Proposed)
 
@@ -93,6 +96,7 @@ mesalog/
 ├── src/
 │   ├── game.pl              # Generic game contract/interface
 │   ├── engine.pl            # Match engine and orchestration
+│   ├── mesalog.pl           # Module integration, composition, and loading
 │   ├── ai.pl                # Minimax and alpha-beta pruning
 │   ├── heuristics.pl        # Predefined and custom heuristics
 │   ├── arbiter.pl           # Move and rule validation
