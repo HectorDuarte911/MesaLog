@@ -108,10 +108,14 @@ mesalog/
 │       ├── tic_tac_toe.pl   # Tic-Tac-Toe implementation
 │       └── connect_four.pl  # Connect Four implementation
 └── tests/                   # Tests and demo queries
-    └── phase1_core_tests.pl # Phase 1 interface/engine/integration checks
+    ├── phase1_core_tests.pl         # Phase 1 interface/engine/integration checks
+    ├── phase2_nim_tests.pl           # Phase 2 Nim game module checks
+    ├── phase2_tic_tac_toe_tests.pl   # Phase 2 Tic-Tac-Toe game module checks
+    ├── phase2_connect_four_tests.pl  # Phase 2 Connect Four game module checks
+    └── phase2_conformance_tests.pl   # Phase 2 cross-game conformance checks
 ```
 
-> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented Phase 1 modules are `src/game.pl`, `src/engine.pl`, and `src/mesalog.pl`, validated by `tests/phase1_core_tests.pl`.
+> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, and `tests/phase2_conformance_tests.pl`.
 
 ## 🔌 Generic Game Interface
 
@@ -303,10 +307,26 @@ On Windows, if the command is not recognized, it can be run directly from the in
 ?- [src/game, src/engine, src/mesalog].
 ```
 
-### 🧪 Run Phase 1 Validation Tests
+### 🧪 Run Validation Tests
 
 ```bash
+# Phase 1 core tests
 swipl -q -g "consult('tests/phase1_core_tests.pl'), run_tests, halt."
+
+# Phase 2 Nim tests
+swipl -q -g "consult('tests/phase2_nim_tests.pl'), run_tests, halt."
+
+# Phase 2 Tic-Tac-Toe tests
+swipl -q -g "consult('tests/phase2_tic_tac_toe_tests.pl'), run_tests, halt."
+
+# Phase 2 Connect Four tests
+swipl -q -g "consult('tests/phase2_connect_four_tests.pl'), run_tests, halt."
+
+# Phase 2 conformance tests
+swipl -q -g "consult('tests/phase2_conformance_tests.pl'), run_tests, halt."
+
+# All current tests
+swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), (run_tests -> halt(0) ; halt(1))"
 ```
 
 ### ▶️ Start a Match
@@ -356,7 +376,14 @@ MesaLog is in the **design and early implementation phase**. This README describ
 
 **Phase 1 (Core Architecture & Generic Engine) progress:**
 - **Completed:** Generic game interface contract (`src/game.pl`), match engine with controller-based step transitions (`src/engine.pl`), module integration/composition and structured validation/error flow (`src/mesalog.pl`), and minimal interface-conformance/smoke validation tests (`tests/phase1_core_tests.pl`).
-- **Pending in Phase 1:** none (core Phase 1 objectives are implemented; concrete game modules, arbiter, AI, DSL, and statistics remain planned for later phases).
+- **Pending in Phase 1:** none.
+
+**Phase 2 (Base Game Modules) progress:**
+- **Completed (Subphase 1 - Nim):** Nim module (`src/games/nim.pl`) implementing the generic `game` contract with immutable `nim_state(Heaps, CurrentPlayer)`, `remove(HeapIndex, Amount)` moves, legal move generation/validation, immutable move application, normal-play terminal detection (`win(Player)`), readable display, and basic evaluable features; validated by `tests/phase2_nim_tests.pl`.
+- **Completed (Subphase 2 - Tic-Tac-Toe):** Tic-Tac-Toe module (`src/games/tic_tac_toe.pl`) implementing the generic `game` contract with immutable `ttt_state(Board, CurrentPlayer)`, `place(Row, Col)` moves, 3x3 board representation (`x`, `o`, `e`), legal move generation/validation, immutable move application, win/draw terminal detection, readable display, and basic evaluable features; validated by `tests/phase2_tic_tac_toe_tests.pl`.
+- **Completed (Subphase 3 - Connect Four):** Connect Four module (`src/games/connect_four.pl`) implementing the generic `game` contract with immutable `c4_state(Board, CurrentPlayer)`, `drop(Column)` moves, 6x7 board representation (`red`, `yellow`, `e`), gravity-based placement, legal move generation/validation, immutable move application, four-in-a-row win/draw terminal detection, readable display, and basic evaluable features; validated by `tests/phase2_connect_four_tests.pl`.
+- **Completed (Final subphase - Conformance and consistency):** Cross-game conformance/smoke tests (`tests/phase2_conformance_tests.pl`) verify that Nim, Tic-Tac-Toe, and Connect Four satisfy the generic `game` contract and run through the generic `engine` and `mesalog` integration flow without game-specific core changes.
+- **Pending in Phase 2:** none.
 
 The module structure, exact predicate signatures, and definitive commands/queries may be refined as development progresses.
 
