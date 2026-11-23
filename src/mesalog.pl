@@ -4,12 +4,16 @@
     load_game/1,
     reject_move/4,
     validate_move/4,
+    explain_move/5,
+    explain_status/3,
     try_move/3,
     try_step/2
 ]).
 
 :- use_module(game).
 :- use_module(engine).
+:- use_module(arbiter).
+:- use_module(explanation).
 
 % Module integration and composition for MesaLog (Phase 1).
 %
@@ -74,16 +78,35 @@ game_module_path(Game, Path) :-
 % Validates Move in State for Game and returns ok or error(Reason).
 % This predicate defines the error/invalid-move handling flow between the
 % engine/integration layer and validation components.
-validate_move(Game, State, _Move, error(match_finished(Result))) :-
+% The arbiter centralizes rule/shape/bounds/occupancy reasons while this layer
+% preserves reject_move/4 hook precedence for external validators.
+validate_move(Game, State, _Move, error(game_finished(Result))) :-
     game:terminal_state(Game, State, Result),
     !.
 validate_move(Game, State, Move, error(Reason)) :-
     reject_move(Game, State, Move, Reason),
     !.
-validate_move(Game, State, Move, ok) :-
-    game:valid_move(Game, State, Move),
+validate_move(Game, State, Move, Validation) :-
+    arbiter:check_move(Game, State, Move, Verdict),
+    verdict_to_validation(Verdict, Validation).
+
+% verdict_to_validation(+Verdict, -Validation)
+% Maps arbiter verdicts to mesalog validation outcomes.
+verdict_to_validation(valid, ok) :- !.
+verdict_to_validation(invalid(Reason), error(Reason)) :- !.
+verdict_to_validation(Verdict, error(unexpected_arbiter_verdict(Verdict))).
+
+% explain_move(+Game, +State, +Move, -Verdict, -Explanation)
+% Delegates move explanation to the explanation module.
+explain_move(Game, State, Move, Verdict, Explanation) :-
+    explanation:explain_move(Game, State, Move, Verdict, Explanation),
     !.
-validate_move(_Game, _State, Move, error(invalid_move(Move))).
+
+% explain_status(+Game, +State, -Status, -Explanation)
+% Delegates state status explanation to the explanation module.
+explain_status(Game, State, Status, Explanation) :-
+    explanation:explain_status(Game, State, Status, Explanation),
+    !.
 
 % try_move(+Match, +Move, -Outcome)
 % Attempts to apply Move to Match after validation.

@@ -122,7 +122,7 @@ test(mesalog_validate_rejects_invalid_move_all_games) :-
     forall(member(Game, Games), (
         game:initial_state(Game, State),
         mesalog:validate_move(Game, State, definitely_invalid_move, Validation),
-        assertion(Validation == error(invalid_move(definitely_invalid_move)))
+        assertion(Validation == error(invalid_move_shape(definitely_invalid_move)))
     )).
 
 test(mesalog_try_move_applies_legal_move_all_games) :-

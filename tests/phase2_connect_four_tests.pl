@@ -216,7 +216,7 @@ test(c4_mesalog_validate_move_invalid) :-
         [yellow,e,e,e,e,e,e]
     ],
     mesalog:validate_move(connect_four, c4_state(Board, red), drop(1), Validation),
-    assertion(Validation == error(invalid_move(drop(1)))).
+    assertion(Validation == error(column_full(column(1)))).
 
 test(c4_mesalog_try_move_ok) :-
     engine:init_match(connect_four, [red-first_legal, yellow-first_legal], Match0),
