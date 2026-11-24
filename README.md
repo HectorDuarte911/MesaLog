@@ -71,7 +71,7 @@ MesaLog is organized into layers/components with well-defined responsibilities:
    Verifies that requested moves are valid in the current state and provides reasons for acceptance or rejection.
 
 6. **Artificial intelligence (`ai`)**  
-   Implements adversarial search algorithms to select moves. `src/ai.pl` provides minimax plus fail-soft alpha-beta pruning over the generic game contract, with perspective-relative terminal evaluation, matching move-selection APIs, configurable depth limits, a cut-off evaluation hook, and AI controllers for the engine.
+   Implements adversarial search algorithms to select moves. `src/ai.pl` provides minimax plus fail-soft alpha-beta pruning over the generic game contract, with perspective-relative terminal evaluation, matching move-selection APIs, configurable depth limits, a cut-off evaluation hook, and AI controllers for the engine. `src/ai_stats.pl` compares both algorithms by counting expanded successor states.
 
 7. **Heuristics (`heuristics`)**  
    Manages evaluation functions, features, predefined heuristics, and custom weighted heuristics.
@@ -100,6 +100,7 @@ mesalog/
 │   ├── arbiter.pl           # Move and rule validation
 │   ├── explanation.pl       # Explanation and traceability
 │   ├── ai.pl                # Minimax and alpha-beta pruning
+│   ├── ai_stats.pl          # Search statistics and algorithm comparison
 │   ├── heuristics.pl        # Predefined and custom heuristics
 │   ├── statistics.pl        # Match history and statistics
 │   ├── dsl.pl               # Move DSL (op/3)
@@ -107,6 +108,8 @@ mesalog/
 │       ├── nim.pl           # Nim implementation
 │       ├── tic_tac_toe.pl   # Tic-Tac-Toe implementation
 │       └── connect_four.pl  # Connect Four implementation
+├── examples/                # Runnable demo queries
+│   └── ai_demo.pl           # Phase 4 AI move/comparison/match demo
 └── tests/                   # Tests and demo queries
     ├── phase1_core_tests.pl         # Phase 1 interface/engine/integration checks
     ├── phase2_nim_tests.pl           # Phase 2 Nim game module checks
@@ -119,10 +122,11 @@ mesalog/
     ├── phase3_conformance_tests.pl   # Phase 3 cross-game arbiter/explanation conformance
     ├── phase4_minimax_tests.pl       # Phase 4 plain minimax checks
     ├── phase4_alpha_beta_tests.pl    # Phase 4 alpha-beta pruning checks
-    └── phase4_search_control_tests.pl # Phase 4 depth control and engine AI controllers
+    ├── phase4_search_control_tests.pl # Phase 4 depth control and engine AI controllers
+    └── phase4_validation_tests.pl    # Phase 4 known scenarios and search comparison
 ```
 
-> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/ai.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, `tests/phase3_engine_integration_tests.pl`, `tests/phase3_conformance_tests.pl`, `tests/phase4_minimax_tests.pl`, `tests/phase4_alpha_beta_tests.pl`, and `tests/phase4_search_control_tests.pl`.
+> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/ai.pl`, `src/ai_stats.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, `tests/phase3_engine_integration_tests.pl`, `tests/phase3_conformance_tests.pl`, `tests/phase4_minimax_tests.pl`, `tests/phase4_alpha_beta_tests.pl`, `tests/phase4_search_control_tests.pl`, and `tests/phase4_validation_tests.pl`. The runnable demo is `examples/ai_demo.pl`.
 
 ## 🔌 Generic Game Interface
 
@@ -253,6 +257,34 @@ AI move sources are installed as clauses of the multifile `engine:choose_move/5`
 ```
 
 Supported controller terms are `ai(minimax)`, `ai(alpha_beta)`, `ai(minimax, Depth)`, and `ai(alpha_beta, Depth)`. Selected moves still pass through the arbiter in `engine:step_match/3` and `mesalog:try_step/2`.
+
+### 📊 Search Comparison and Demo
+
+`src/ai_stats.pl` measures how many successor states each algorithm actually expands, without changing the search code:
+
+```prolog
+?- ai_stats:compare_search(nim, nim_state([2,3], player1), player1, 3, Comparison).
+Comparison = comparison(report(0, 49), report(0, 33), 16, true).
+```
+
+`print_comparison/5` prints the same data, and `examples/ai_demo.pl` provides a runnable demonstration of move selection, comparison, and a full AI-driven match:
+
+```bash
+swipl -q -g "consult('examples/ai_demo.pl'), demo, halt."
+```
+
+```text
+AI move selection
+  Nim [3,4,5]: remove(1,2) (score 1)
+  Tic-Tac-Toe immediate win: place(1,3) (score 1)
+Search comparison: Nim [2,3], depth 3
+  minimax:    score 0, nodes 49
+  alpha-beta: score 0, nodes 33
+  saved nodes: 16, equivalent: true
+AI vs first_legal Tic-Tac-Toe match (depth 2)
+  ...
+  result: win(x)
+```
 
 ## ⚖️ Arbiter, Validation, and Explainability
 
@@ -414,8 +446,11 @@ swipl -q -g "consult('tests/phase4_alpha_beta_tests.pl'), run_tests, halt."
 # Phase 4 search control tests
 swipl -q -g "consult('tests/phase4_search_control_tests.pl'), run_tests, halt."
 
+# Phase 4 validation and comparison tests
+swipl -q -g "consult('tests/phase4_validation_tests.pl'), run_tests, halt."
+
 # All current tests
-swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), consult('tests/phase3_conformance_tests.pl'), consult('tests/phase4_minimax_tests.pl'), consult('tests/phase4_alpha_beta_tests.pl'), consult('tests/phase4_search_control_tests.pl'), (run_tests -> halt(0) ; halt(1))"
+swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), consult('tests/phase3_conformance_tests.pl'), consult('tests/phase4_minimax_tests.pl'), consult('tests/phase4_alpha_beta_tests.pl'), consult('tests/phase4_search_control_tests.pl'), consult('tests/phase4_validation_tests.pl'), (run_tests -> halt(0) ; halt(1))"
 ```
 
 ### ▶️ Start a Match
@@ -486,7 +521,8 @@ MesaLog is in the **design and early implementation phase**. This README describ
 - **Completed (Subphase 1 - Minimax):** AI module (`src/ai.pl`) implements plain minimax over the generic `game` contract. It evaluates terminal results relative to a fixed perspective (`1` win, `-1` loss, `0` draw), alternates maximizing/minimizing roles from `game:current_player/3`, explores successors with `game:legal_moves/3` and immutable `game:apply_move/4`, and exposes `minimax/4` plus `choose_best_move/5`. Validated by `tests/phase4_minimax_tests.pl` with a deterministic test tree and real Nim/Tic-Tac-Toe positions.
 - **Completed (Subphase 2 - Alpha-beta pruning):** `src/ai.pl` adds `alpha_beta/4` and `choose_best_move_alpha_beta/5`. The search is fail-soft, uses the same terminal evaluation and game hooks as minimax, tightens `Alpha`/`Beta` through maximizing and minimizing nodes, and skips branches that cannot change the root decision. Validated by `tests/phase4_alpha_beta_tests.pl`, which checks score and move equivalence on real Nim/Tic-Tac-Toe positions and counts expanded nodes through a counting wrapper to confirm pruning.
 - **Completed (Subphase 3 - Search control):** `src/ai.pl` unifies both algorithms under a depth parameter. `minimax/5`, `alpha_beta/5`, `choose_best_move/6`, and `choose_best_move_alpha_beta/6` accept a ply budget or `unlimited`; terminal states are evaluated before the cut-off check, and non-terminal cut-off nodes use `ai:evaluate/4` (neutral `0` by default, overridable through the multifile hook `ai:evaluation_hook/4`). AI move sources are installed as `ai(minimax)`, `ai(alpha_beta)`, `ai(minimax, Depth)`, and `ai(alpha_beta, Depth)` clauses of the multifile `engine:choose_move/5` hook, so `engine:step_match/3` and `mesalog:explain_step/3` work with AI controllers. Validated by `tests/phase4_search_control_tests.pl`.
-- **Pending in Phase 4:** minimax/alpha-beta validation and comparison on small known scenarios and explored-node characteristics.
+- **Completed (Subphase 4 - Validation and comparison):** `src/ai_stats.pl` adds `search_report/6`, `compare_search/5`, and `print_comparison/5`, counting expanded successors through a multifile counting wrapper without changing search code. `tests/phase4_validation_tests.pl` checks known Nim/Tic-Tac-Toe results (zero-position losses, winning moves, immediate wins, blocks), minimax/alpha-beta equivalence with and without depth limits, and that alpha-beta expands fewer nodes while returning the same score. `examples/ai_demo.pl` demonstrates move selection, search comparison, and a complete AI-driven engine match.
+- **Pending in Phase 4:** none. Phase 4 is complete; later phases add configurable heuristics, the move DSL, and history/statistics.
 
 The module structure, exact predicate signatures, and definitive commands/queries may be refined as development progresses.
 
