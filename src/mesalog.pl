@@ -6,6 +6,10 @@
     validate_move/4,
     explain_move/5,
     explain_status/3,
+    explain_terminal/4,
+    explain_evaluation/5,
+    explain_selected_move/6,
+    explanation_message/2,
     try_move/3,
     try_step/2
 ]).
@@ -107,6 +111,27 @@ explain_move(Game, State, Move, Verdict, Explanation) :-
 explain_status(Game, State, Status, Explanation) :-
     explanation:explain_status(Game, State, Status, Explanation),
     !.
+
+% explain_terminal(+Game, +State, -Result, -Explanation)
+% Delegates terminal-state explanation to the explanation module.
+explain_terminal(Game, State, Result, Explanation) :-
+    explanation:explain_terminal(Game, State, Result, Explanation),
+    !.
+
+% explain_evaluation(+Game, +State, +EvalContext, -Score, -Explanation)
+% Delegates evaluation explanation to the explanation module hook.
+explain_evaluation(Game, State, EvalContext, Score, Explanation) :-
+    explanation:explain_evaluation(Game, State, EvalContext, Score, Explanation).
+
+% explain_selected_move(+Game, +State, +SearchContext, -Move, -Score, -Explanation)
+% Delegates move-selection explanation to the explanation module hook.
+explain_selected_move(Game, State, SearchContext, Move, Score, Explanation) :-
+    explanation:explain_selected_move(Game, State, SearchContext, Move, Score, Explanation).
+
+% explanation_message(+Explanation, -Message)
+% Extracts a human-readable message from an explanation dict.
+explanation_message(Explanation, Message) :-
+    explanation:explanation_message(Explanation, Message).
 
 % try_move(+Match, +Move, -Outcome)
 % Attempts to apply Move to Match after validation.
