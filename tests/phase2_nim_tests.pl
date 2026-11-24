@@ -118,7 +118,7 @@ test(nim_mesalog_validate_move_ok) :-
 test(nim_mesalog_validate_move_invalid) :-
     game:initial_state(nim, State),
     mesalog:validate_move(nim, State, remove(3, 9), Validation),
-    assertion(Validation == error(invalid_move(remove(3, 9)))).
+    assertion(Validation == error(invalid_amount(amount(9, 5)))).
 
 test(nim_mesalog_try_move_ok) :-
     engine:init_match(nim, [player1-first_legal, player2-first_legal], Match0),

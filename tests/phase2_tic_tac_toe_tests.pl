@@ -124,7 +124,7 @@ test(ttt_mesalog_validate_move_ok) :-
 test(ttt_mesalog_validate_move_invalid) :-
     State = ttt_state([[x,e,e],[e,e,e],[e,e,e]], o),
     mesalog:validate_move(tic_tac_toe, State, place(1,1), Validation),
-    assertion(Validation == error(invalid_move(place(1,1)))).
+    assertion(Validation == error(cell_occupied(row_col(1,1), x))).
 
 test(ttt_mesalog_try_move_ok) :-
     engine:init_match(tic_tac_toe, [x-first_legal, o-first_legal], Match0),

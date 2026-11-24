@@ -174,7 +174,7 @@ test(integration_validate_move_invalid) :-
 
 test(integration_validate_move_terminal) :-
     mesalog:validate_move(phase1_test_game, state(2, p1), inc, Validation),
-    assertion(Validation == error(match_finished(win(p1)))).
+    assertion(Validation == error(game_finished(win(p1)))).
 
 test(integration_validate_move_reject_hook) :-
     mesalog:validate_move(phase1_test_game, state(0, p1), blocked_move, Validation),
