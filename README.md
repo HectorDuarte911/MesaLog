@@ -115,10 +115,11 @@ mesalog/
     ├── phase2_conformance_tests.pl   # Phase 2 cross-game conformance checks
     ├── phase3_arbiter_tests.pl       # Phase 3 arbiter validation checks
     ├── phase3_explanation_tests.pl   # Phase 3 explanation and traceability checks
-    └── phase3_engine_integration_tests.pl  # Phase 3 engine/arbiter integration and surfaced explanations
+    ├── phase3_engine_integration_tests.pl  # Phase 3 engine/arbiter integration and surfaced explanations
+    └── phase3_conformance_tests.pl   # Phase 3 cross-game arbiter/explanation conformance
 ```
 
-> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, and `tests/phase3_engine_integration_tests.pl`.
+> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, `tests/phase3_engine_integration_tests.pl`, and `tests/phase3_conformance_tests.pl`.
 
 ## 🔌 Generic Game Interface
 
@@ -348,8 +349,11 @@ swipl -q -g "consult('tests/phase3_explanation_tests.pl'), run_tests, halt."
 # Phase 3 engine integration tests
 swipl -q -g "consult('tests/phase3_engine_integration_tests.pl'), run_tests, halt."
 
+# Phase 3 cross-game conformance tests
+swipl -q -g "consult('tests/phase3_conformance_tests.pl'), run_tests, halt."
+
 # All current tests
-swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), (run_tests -> halt(0) ; halt(1))"
+swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), consult('tests/phase3_conformance_tests.pl'), (run_tests -> halt(0) ; halt(1))"
 ```
 
 ### ▶️ Start a Match
@@ -410,10 +414,11 @@ MesaLog is in the **design and early implementation phase**. This README describ
 
 **Phase 3 (Arbiter, Explanation, and Traceability) progress:**
 - **Completed (Subphase 1 - Arbiter):** Arbiter module (`src/arbiter.pl`) centralizes move validation with structured reasons (shape/bounds/occupancy/amount/column-full/terminal), integrated into `mesalog:validate_move/4` while preserving `reject_move/4` hook precedence.
-- **Completed (Subphase 1 - Explanation):** Explanation module (`src/explanation.pl`) provides human-readable move/status explanations and is exposed through `mesalog:explain_move/5` and `mesalog:explain_status/3`.
+- **Completed (Subphase 1 - Explanation):** Explanation module (`src/explanation.pl`) provides human-readable move/status explanations and is exposed through `mesalog:explain_move/5` and `mesalog:explain_status/4`.
 - **Completed (Subphase 2 - Explanation and traceability):** Extended explanation support with explicit terminal-result explanations, AI-ready `explain_evaluation/5` and `explain_selected_move/6` multifile hooks, and `explanation_message/2`; all exposed through `mesalog`. Validated by `tests/phase3_explanation_tests.pl`.
 - **Completed (Subphase 3 - Engine integration):** `engine:step_match/3` routes controller-selected moves through `arbiter:check_move/4` before applying them. `mesalog` adds user-facing outcome explanations through `explain_step/3`, `explain_outcome/2`, `outcome_message/2`, and `print_outcome/1`, keeping validation reasons traceable to readable messages. Validated by `tests/phase3_engine_integration_tests.pl`.
-- **Pending in Phase 3:** broader explanation surfacing as later phases add AI/DSL/history, plus concrete AI hook clauses once AI search exists.
+- **Completed (Final subphase - Cross-game validation):** `tests/phase3_conformance_tests.pl` verifies legal/illegal moves and expected explanations across Nim, Tic-Tac-Toe, and Connect Four. It checks that arbiter verdicts agree with game rules, that structured reasons survive through `validate_move/4`, `try_move/3`, `try_step/2`, and `explain_step/3`, that every reason has a readable message, that engine steps honor the same gate, and that terminal states are explained consistently.
+- **Pending in Phase 3:** none. Concrete AI evaluation/selection hook clauses and richer user interfaces are deferred to the AI, heuristic, DSL, and integration phases.
 
 The module structure, exact predicate signatures, and definitive commands/queries may be refined as development progresses.
 

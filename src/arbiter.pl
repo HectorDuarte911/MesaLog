@@ -22,12 +22,12 @@
 % Reason terms are game-aware but normalized where possible:
 % - game_finished(Result)
 % - invalid_move_shape(Move)
-% - out_of_bounds(Details)
-% - cell_occupied(Details)
-% - heap_out_of_range(Details)
-% - invalid_amount(Details)
-% - column_full(Details)
-% - illegal_move(Move)
+% - out_of_bounds(Details, Bounds)
+% - cell_occupied(Details, OccupiedBy)
+% - heap_out_of_range(heap(Index, Count))
+% - invalid_amount(amount(Amount, HeapSize))
+% - column_full(column(Column))
+% - invalid_move(Move)
 
 %% check_move(+Game, +State, +Move, -Verdict)
 % Returns valid when Move is legal in State for Game, otherwise invalid(Reason).
