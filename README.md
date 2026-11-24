@@ -71,7 +71,7 @@ MesaLog is organized into layers/components with well-defined responsibilities:
    Verifies that requested moves are valid in the current state and provides reasons for acceptance or rejection.
 
 6. **Artificial intelligence (`ai`)**  
-   Implements adversarial search algorithms (minimax and alpha-beta pruning) to select moves.
+   Implements adversarial search algorithms to select moves. The Phase 4.1 implementation in `src/ai.pl` provides plain, depth-unbounded minimax over the generic game contract, with perspective-relative terminal evaluation and a `choose_best_move/5` API. Alpha-beta pruning and depth control are planned for later subphases.
 
 7. **Heuristics (`heuristics`)**  
    Manages evaluation functions, features, predefined heuristics, and custom weighted heuristics.
@@ -116,10 +116,11 @@ mesalog/
     ├── phase3_arbiter_tests.pl       # Phase 3 arbiter validation checks
     ├── phase3_explanation_tests.pl   # Phase 3 explanation and traceability checks
     ├── phase3_engine_integration_tests.pl  # Phase 3 engine/arbiter integration and surfaced explanations
-    └── phase3_conformance_tests.pl   # Phase 3 cross-game arbiter/explanation conformance
+    ├── phase3_conformance_tests.pl   # Phase 3 cross-game arbiter/explanation conformance
+    └── phase4_minimax_tests.pl       # Phase 4 plain minimax checks
 ```
 
-> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, `tests/phase3_engine_integration_tests.pl`, and `tests/phase3_conformance_tests.pl`.
+> This structure reflects the project's planned organization; files and their contents may evolve during development. Currently implemented modules are `src/game.pl`, `src/engine.pl`, `src/mesalog.pl`, `src/arbiter.pl`, `src/explanation.pl`, `src/ai.pl`, `src/games/nim.pl`, `src/games/tic_tac_toe.pl`, and `src/games/connect_four.pl`, validated by `tests/phase1_core_tests.pl`, `tests/phase2_nim_tests.pl`, `tests/phase2_tic_tac_toe_tests.pl`, `tests/phase2_connect_four_tests.pl`, `tests/phase2_conformance_tests.pl`, `tests/phase3_arbiter_tests.pl`, `tests/phase3_explanation_tests.pl`, `tests/phase3_engine_integration_tests.pl`, `tests/phase3_conformance_tests.pl`, and `tests/phase4_minimax_tests.pl`.
 
 ## 🔌 Generic Game Interface
 
@@ -200,6 +201,21 @@ profile(defensive, weighted([(blocks, 5), (material, 2)])).
 ### 🔗 Integration with Search
 
 The selected heuristic is used in node evaluation during minimax/alpha-beta (especially at leaf nodes of the explored depth or in non-terminal states), allowing the AI's behavior to be adjusted without modifying the search algorithm.
+
+### 🤖 Current Minimax API (Phase 4.1)
+
+Plain minimax is already available through `src/ai.pl`. Scores are relative to a fixed perspective: `1` for a win, `-1` for a loss, and `0` for a draw.
+
+```prolog
+?- ai:minimax(nim, nim_state([1,2], player1), player1, Score).
+Score = 1.
+
+?- ai:choose_best_move(nim, nim_state([1,2], player1), player1, Move, Score).
+Move = remove(2,1),
+Score = 1.
+```
+
+`minimax/4` and `choose_best_move/5` operate only on the generic `game` contract, so the same queries work for any conforming game. Depth limits and alpha-beta pruning will be added in the next subphases.
 
 ## ⚖️ Arbiter, Validation, and Explainability
 
@@ -352,8 +368,11 @@ swipl -q -g "consult('tests/phase3_engine_integration_tests.pl'), run_tests, hal
 # Phase 3 cross-game conformance tests
 swipl -q -g "consult('tests/phase3_conformance_tests.pl'), run_tests, halt."
 
+# Phase 4 minimax tests
+swipl -q -g "consult('tests/phase4_minimax_tests.pl'), run_tests, halt."
+
 # All current tests
-swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), consult('tests/phase3_conformance_tests.pl'), (run_tests -> halt(0) ; halt(1))"
+swipl -q -g "consult('tests/phase1_core_tests.pl'), consult('tests/phase2_nim_tests.pl'), consult('tests/phase2_tic_tac_toe_tests.pl'), consult('tests/phase2_connect_four_tests.pl'), consult('tests/phase2_conformance_tests.pl'), consult('tests/phase3_arbiter_tests.pl'), consult('tests/phase3_explanation_tests.pl'), consult('tests/phase3_engine_integration_tests.pl'), consult('tests/phase3_conformance_tests.pl'), consult('tests/phase4_minimax_tests.pl'), (run_tests -> halt(0) ; halt(1))"
 ```
 
 ### ▶️ Start a Match
@@ -419,6 +438,10 @@ MesaLog is in the **design and early implementation phase**. This README describ
 - **Completed (Subphase 3 - Engine integration):** `engine:step_match/3` routes controller-selected moves through `arbiter:check_move/4` before applying them. `mesalog` adds user-facing outcome explanations through `explain_step/3`, `explain_outcome/2`, `outcome_message/2`, and `print_outcome/1`, keeping validation reasons traceable to readable messages. Validated by `tests/phase3_engine_integration_tests.pl`.
 - **Completed (Final subphase - Cross-game validation):** `tests/phase3_conformance_tests.pl` verifies legal/illegal moves and expected explanations across Nim, Tic-Tac-Toe, and Connect Four. It checks that arbiter verdicts agree with game rules, that structured reasons survive through `validate_move/4`, `try_move/3`, `try_step/2`, and `explain_step/3`, that every reason has a readable message, that engine steps honor the same gate, and that terminal states are explained consistently.
 - **Pending in Phase 3:** none. Concrete AI evaluation/selection hook clauses and richer user interfaces are deferred to the AI, heuristic, DSL, and integration phases.
+
+**Phase 4 (AI Search: Minimax & Alpha-Beta) progress:**
+- **Completed (Subphase 1 - Minimax):** AI module (`src/ai.pl`) implements plain minimax over the generic `game` contract. It evaluates terminal results relative to a fixed perspective (`1` win, `-1` loss, `0` draw), alternates maximizing/minimizing roles from `game:current_player/3`, explores successors with `game:legal_moves/3` and immutable `game:apply_move/4`, and exposes `minimax/4` plus `choose_best_move/5`. Validated by `tests/phase4_minimax_tests.pl` with a deterministic test tree and real Nim/Tic-Tac-Toe positions.
+- **Pending in Phase 4:** alpha-beta pruning, depth-limited search with a non-terminal evaluation fallback, engine move-selection integration, and minimax/alpha-beta validation and comparison.
 
 The module structure, exact predicate signatures, and definitive commands/queries may be refined as development progresses.
 
