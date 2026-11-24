@@ -1,16 +1,19 @@
 :- module(ai, [
     minimax/4,
-    choose_best_move/5
+    choose_best_move/5,
+    alpha_beta/4,
+    choose_best_move_alpha_beta/5
 ]).
 
 :- use_module(game).
 :- use_module(library(lists)).
 
-% AI search module for MesaLog (Phase 4, Subphase 1).
+% AI search module for MesaLog (Phase 4, Subphases 1-2).
 %
-% This module implements plain minimax over the generic game contract. It does
-% not depend on any concrete game and performs no alpha-beta pruning yet; that
-% refinement belongs to the next subphase.
+% This module implements plain minimax and alpha-beta pruning over the generic
+% game contract. It does not depend on any concrete game. Both algorithms read
+% the same game hooks and use the same terminal evaluation, so their results are
+% directly comparable.
 %
 % Score convention:
 % - +1 when Perspective wins the game.
@@ -91,4 +94,120 @@ best_scored_move([Score-Move|Rest], CurrentScore-CurrentMove, Best) :-
     (   Score > CurrentScore
     ->  best_scored_move(Rest, Score-Move, Best)
     ;   best_scored_move(Rest, CurrentScore-CurrentMove, Best)
+    ).
+
+% ---------------------------------------------------------------------------
+% Alpha-beta pruning (Phase 4, Subphase 2)
+% ---------------------------------------------------------------------------
+
+:- discontiguous best_alpha_beta_move/7.
+
+% Search windows are numeric because scores are numeric. The bounds only need
+% to be wider than any score the game/evaluation layer can produce; terminal
+% scores are -1, 0, 1, so these sentinels are far outside that range.
+lower_bound(-1000000).
+upper_bound(1000000).
+
+%% alpha_beta(+Game, +State, +Perspective, -Score)
+% Returns the same value as minimax/4 while pruning branches that cannot affect
+% the final decision. The initial window is deliberately unbounded in both
+% directions, so a fully explored call yields the exact minimax score.
+alpha_beta(Game, State, Perspective, Score) :-
+    lower_bound(Lower),
+    upper_bound(Upper),
+    alpha_beta_search(Game, State, Perspective, Lower, Upper, Score),
+    !.
+
+% alpha_beta_search(+Game, +State, +Perspective, +Alpha, +Beta, -Score)
+% Fail-soft alpha-beta: on a cutoff the tightened bound is returned instead of
+% the unconditional bound. This keeps the value as informative as possible
+% without changing the decision at the root.
+alpha_beta_search(Game, State, Perspective, Alpha, Beta, Score) :-
+    (   game:terminal_state(Game, State, Result)
+    ->  terminal_score(Result, Perspective, Score)
+    ;   game:current_player(Game, State, Player),
+        once(game:legal_moves(Game, State, Moves)),
+        (   Moves == []
+        ->  Score = 0
+        ;   Player == Perspective
+        ->  alpha_beta_max(Game, State, Perspective, Moves, Alpha, Beta, Score)
+        ;   alpha_beta_min(Game, State, Perspective, Moves, Alpha, Beta, Score)
+        )
+    ).
+
+% alpha_beta_max(+Game, +State, +Perspective, +Moves, +Alpha, +Beta, -Score)
+% Maximizing node. Alpha is the best value found so far by an ancestor; once it
+% reaches Beta, the opponent can force a position no better than an already
+% available alternative, so the remaining moves are skipped.
+alpha_beta_max(_Game, _State, _Perspective, [], Alpha, _Beta, Alpha).
+alpha_beta_max(Game, State, Perspective, [Move|Rest], Alpha, Beta, Score) :-
+    game:apply_move(Game, State, Move, NextState),
+    alpha_beta_search(Game, NextState, Perspective, Alpha, Beta, ChildScore),
+    Alpha1 is max(Alpha, ChildScore),
+    (   Alpha1 >= Beta
+    ->  Score = Alpha1
+    ;   alpha_beta_max(Game, State, Perspective, Rest, Alpha1, Beta, Score)
+    ).
+
+% alpha_beta_min(+Game, +State, +Perspective, +Moves, +Alpha, +Beta, -Score)
+% Minimizing node, symmetric to alpha_beta_max/7.
+alpha_beta_min(_Game, _State, _Perspective, [], _Alpha, Beta, Beta).
+alpha_beta_min(Game, State, Perspective, [Move|Rest], Alpha, Beta, Score) :-
+    game:apply_move(Game, State, Move, NextState),
+    alpha_beta_search(Game, NextState, Perspective, Alpha, Beta, ChildScore),
+    Beta1 is min(Beta, ChildScore),
+    (   Beta1 =< Alpha
+    ->  Score = Beta1
+    ;   alpha_beta_min(Game, State, Perspective, Rest, Alpha, Beta1, Score)
+    ).
+
+%% choose_best_move_alpha_beta(+Game, +State, +Perspective, -Move, -Score)
+% Root-level move selection using alpha-beta. The root keeps a running Alpha and
+% uses the same tie rule as choose_best_move/5: the first legal move wins ties.
+% The root Beta stays at the upper bound, so the returned score is exact.
+choose_best_move_alpha_beta(Game, State, Perspective, Move, Score) :-
+    game:current_player(Game, State, Perspective),
+    once(game:legal_moves(Game, State, Moves)),
+    Moves \== [],
+    lower_bound(Lower),
+    upper_bound(Upper),
+    best_alpha_beta_move(Game, State, Perspective, Moves, Lower, Upper,
+                         Score-Move),
+    !.
+
+% best_alpha_beta_move(+Game, +State, +Perspective, +Moves, +Alpha, +Beta,
+%                      -Best)
+% Walks the root moves, narrowing Alpha after each child search and carrying the
+% best candidate found so far. A root cutoff can only happen if a score reaches
+% the upper bound; in that case the current candidate is already best.
+best_alpha_beta_move(Game, State, Perspective, [Move|Rest], Alpha, Beta, Best) :-
+    game:apply_move(Game, State, Move, NextState),
+    alpha_beta_search(Game, NextState, Perspective, Alpha, Beta, ChildScore),
+    Alpha1 is max(Alpha, ChildScore),
+    (   Alpha1 >= Beta
+    ->  Best = ChildScore-Move
+    ;   best_alpha_beta_move(Game, State, Perspective, Rest, Alpha1, Beta,
+                             ChildScore-Move, Best)
+    ).
+
+best_alpha_beta_move(_Game, _State, _Perspective, [], _Alpha, _Beta, Best, Best).
+
+best_alpha_beta_move(Game, State, Perspective, [Move|Rest], Alpha, Beta,
+                     Current, Best) :-
+    game:apply_move(Game, State, Move, NextState),
+    alpha_beta_search(Game, NextState, Perspective, Alpha, Beta, ChildScore),
+    Alpha1 is max(Alpha, ChildScore),
+    (   Alpha1 >= Beta
+    ->  Best = ChildScore-Move
+    ;   better_scored_move(Current, ChildScore-Move, Next),
+        best_alpha_beta_move(Game, State, Perspective, Rest, Alpha1, Beta,
+                             Next, Best)
+    ).
+
+% better_scored_move(+Earlier, +Later, -Best)
+% Keeps Earlier on ties so alpha-beta matches the minimax tie rule.
+better_scored_move(Score-Move, OtherScore-OtherMove, Best) :-
+    (   Score >= OtherScore
+    ->  Best = Score-Move
+    ;   Best = OtherScore-OtherMove
     ).
