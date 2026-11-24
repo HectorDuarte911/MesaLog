@@ -5,11 +5,15 @@
     reject_move/4,
     validate_move/4,
     explain_move/5,
-    explain_status/3,
+    explain_status/4,
     explain_terminal/4,
     explain_evaluation/5,
     explain_selected_move/6,
     explanation_message/2,
+    explain_outcome/2,
+    outcome_message/2,
+    print_outcome/1,
+    explain_step/3,
     try_move/3,
     try_step/2
 ]).
@@ -17,16 +21,18 @@
 :- use_module(game).
 :- use_module(engine).
 :- use_module(arbiter).
-:- use_module(explanation).
+:- use_module(explanation, []).
 
-% Module integration and composition for MesaLog (Phase 1).
+% Module integration and composition for MesaLog (Phase 1; explanation
+% surfacing added in Phase 3).
 %
 % This module establishes how core modules are composed, how concrete game
 % modules are loaded, and how invalid-move/error handling flows between the
 % engine and validation components.
 %
 % Core composition:
-% - Depends on the generic contract (game) and match engine (engine).
+% - Depends on the generic contract (game), match engine (engine), arbiter,
+%   and explanation components.
 %
 % Game loading:
 % - load_game(Game) loads src/games/<Game>.pl relative to this module file.
@@ -41,6 +47,12 @@
 %     otherwise -> error(invalid_move(Move))
 % - try_move/3 and try_step/2 return structured outcomes instead of failing:
 %     ok(NextMatch) / ok(Move, NextMatch), error(Reason), finished(Result)
+%
+% Explanation surfacing:
+% - explain_outcome/2 and outcome_message/2 turn those outcomes into readable
+%   explanations/messages, while print_outcome/1 writes a message to output.
+% - explain_step/3 combines a validated step with its explanation so callers
+%   can inspect both the outcome and its justification in one call.
 
 :- multifile reject_move/4.
 
@@ -133,6 +145,22 @@ explain_selected_move(Game, State, SearchContext, Move, Score, Explanation) :-
 explanation_message(Explanation, Message) :-
     explanation:explanation_message(Explanation, Message).
 
+% explain_outcome(+Outcome, -Explanation)
+% Delegates structured-outcome explanation to the explanation module.
+explain_outcome(Outcome, Explanation) :-
+    explanation:explain_outcome(Outcome, Explanation).
+
+% outcome_message(+Outcome, -Message)
+% Extracts the human-readable message for a structured outcome.
+outcome_message(Outcome, Message) :-
+    explanation:outcome_message(Outcome, Message).
+
+% print_outcome(+Outcome)
+% Prints the human-readable message for Outcome to the current output stream.
+print_outcome(Outcome) :-
+    outcome_message(Outcome, Message),
+    format('~w~n', [Message]).
+
 % try_move(+Match, +Move, -Outcome)
 % Attempts to apply Move to Match after validation.
 % - ok(NextMatch): Move is valid and produces NextMatch.
@@ -175,3 +203,12 @@ try_step(match(Game, State, Controllers), Outcome) :-
 % Maps a move application outcome to a step outcome.
 step_outcome(Move, ok(NextMatch), ok(Move, NextMatch)).
 step_outcome(_Move, error(Reason), error(Reason)).
+
+% explain_step(+Match, -Outcome, -Explanation)
+% Advances Match with try_step/2 and explains the resulting outcome. The step
+% flows through validate_move/4 (and therefore the arbiter) before an
+% explanation is produced, keeping decisions and their justification aligned.
+explain_step(Match, Outcome, Explanation) :-
+    try_step(Match, Outcome),
+    explanation:explain_outcome(Outcome, Explanation),
+    !.

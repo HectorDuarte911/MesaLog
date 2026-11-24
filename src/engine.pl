@@ -11,12 +11,15 @@
 ]).
 
 :- use_module(game).
+:- use_module(arbiter).
 
-% Match engine for MesaLog (Phase 1).
+% Match engine for MesaLog (Phase 1; validation integrated in Phase 3).
 %
 % This module orchestrates match lifecycle primitives on top of the generic
 % game contract defined in game.pl. It treats game states as immutable terms
 % and produces new match terms when a move is applied.
+% Move attempts are gated by the declarative arbiter before a transition is
+% produced, so engine steps stay consistent with the validated rule layer.
 %
 % Match representation:
 % - match(Game, State, Controllers)
@@ -68,13 +71,15 @@ current_player_turn(Match, Player) :-
 
 % step_match(+Match, -Move, -NextMatch)
 % Advances a non-terminal Match by one move selected for the current player.
+% The selected move is routed through arbiter:check_move/4 before application.
 % Fails if Match is terminal, if no controller is found, if no move is chosen,
-% or if the game cannot apply the selected move.
+% if the arbiter rejects the selected move, or if the game cannot apply it.
 step_match(match(Game, State, Controllers), Move, match(Game, NewState, Controllers)) :-
     \+ game:terminal_state(Game, State, _Result),
     game:current_player(Game, State, Player),
     select_controller(Controllers, Player, Controller),
     choose_move(Controller, Game, State, Player, Move),
+    arbiter:check_move(Game, State, Move, valid),
     game:apply_move(Game, State, Move, NewState).
 
 % select_controller(+Controllers, +Player, -Controller)

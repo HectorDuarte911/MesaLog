@@ -5,14 +5,14 @@
 :- use_module('../src/engine').
 :- use_module('../src/mesalog', [
     explain_move/5,
-    explain_status/3,
+    explain_status/4,
     explain_terminal/4,
     explain_evaluation/5,
     explain_selected_move/6,
     explanation_message/2,
     try_move/3
 ]).
-:- use_module('../src/explanation').
+:- use_module('../src/explanation', []).
 :- use_module('../src/games/nim').
 :- use_module('../src/games/tic_tac_toe').
 :- use_module('../src/games/connect_four').
